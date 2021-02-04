@@ -1,4 +1,10 @@
-###### **Dept Autologin**
+**Dept Autologin**
+
+The module can be installed either usimg drush or through the User Inteface.
+
+`drush en dept_autologin`
+
+Tokens will be created and added to user accounts during the install.
 
 **Middleware**
 
@@ -16,6 +22,11 @@ in a CI process it would be typical to overwrite these files in the config expor
 created fields rather than creating them in a module.
 
 An alternative approach would be to use the Field API to create the fields at inatall.
+
+I have also added a Constraint Validator to the AUTH TOKEN field, so it is not possible to enter a value that is
+shorter than 32 characters. This could be extended to ensure the value entered is numeric.
+
+
 
 
 
