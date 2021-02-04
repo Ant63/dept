@@ -1,0 +1,5 @@
+name: 'Dept Autologin'
+type: module
+description: 'Code test for Dept allowing user to log in using a token.'
+core_version_requirement: ^8.8 || 9.x
+package: 'Custom'

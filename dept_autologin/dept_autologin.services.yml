@@ -1,0 +1,10 @@
+services:
+  dept_autologin.middleware:
+    class: Drupal\dept_autologin\DeptAutologinMiddleware
+    arguments: ['@current_user', '@dept_autologin.manager']
+    tags:
+      # Ensure to come before page caching.
+      - { name: http_middleware, priority: 49 }
+  dept_autologin.manager:
+    class: Drupal\dept_autologin\AutologinManagerService
+    arguments: ['@database', '@entity_type.manager', '@current_user']

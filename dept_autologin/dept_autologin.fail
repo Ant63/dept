@@ -1,0 +1,87 @@
+<?php
+
+/**
+ * @file
+ * Update function for the user auth token field.
+ */
+
+/**
+ * Implementations of hook_update_N().
+ */
+
+/**
+ * Add random key to user auth token field.
+ */
+function ydept_autologin_update_8013(&$sandbox) {
+
+  // Get the database.
+  $db_connection = \Drupal::database();
+
+  if (!isset($sandbox['progress'])) {
+    // Current count.
+    $sandbox['progress'] = 0;
+    // The total quantity of users.
+    $sandbox['max'] = $db_connection->query('SELECT COUNT(uid) FROM {users}')->fetchField();
+    $sandbox['messages'] = [];
+    // The current user.
+    $sandbox['current_user'] = -1;
+  }
+
+  // Set a limit for how many users to process in each batch.
+  $limit = 20;
+
+  $query = $db_connection->select('users', 'u');
+  $query->fields('u', ['uid']);
+  $result = $query
+    ->where('u.uid > :uid', [':uid' => $sandbox['current_user']])
+    ->range(0, $limit)
+    ->orderBy('u.uid', 'ASC')
+    ->execute();
+
+  foreach ($result as $row) {
+    // Set a random key for each user and update the table.
+    $random_key = create_random_key();
+    $result = $db_connection->insert('user__field_auth_token')
+      ->fields([
+        'bundle' => 'user',
+        'entity_id' => $row->uid,
+        'revision_id' => $row->uid,
+        'langcode' => 'en',
+        'delta' => 0,
+        'field_auth_token_value' => $random_key,
+      ])
+      ->execute();
+
+    // Update our progress information.
+    $sandbox['progress']++;
+    $sandbox['current_user'] = $row->uid;
+  }
+
+  $sandbox['#finished'] = ($sandbox['progress'] >= $sandbox['max']) ? TRUE : ($sandbox['progress'] / $sandbox['max']);
+
+  $sandbox_status = $sandbox;
+  // Remove the messages.
+  unset($sandbox_status['messages']);
+  $sandbox['messages'][] = t('$sandbox=') . print_r($sandbox_status, TRUE);
+
+  if ($sandbox['#finished']) {
+    // Return a message.
+    $final_message = '<ul><li>' . implode('</li><li>', $sandbox['messages']) . "</li></ul>";
+    return t('All users have been updated: @message', ['@message' => $final_message]);
+  }
+
+}
+
+/**
+ * Generate a random string 32 characters in length.
+ *
+ * @return string
+ *   Returns a random string.
+ *
+ * @throws \Exception
+ */
+/*function ucreate_random_key() {
+  $bytes = random_bytes(16);
+  $string = bin2hex($bytes);
+  return $string;
+}*/

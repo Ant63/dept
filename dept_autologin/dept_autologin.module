@@ -1,0 +1,87 @@
+<?php
+
+/**
+ * @file
+ * Contains dept_autologin.module.
+ */
+
+use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_help().
+ */
+function dept_autologin_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the dept_autologin module.
+    case 'help.page.dept_autologin':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Code test for Dept allowing user to log in using a token.') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+/**
+ * Implements hook_install().
+ */
+function dept_autologin_install($is_syncing) {
+
+  // Normally here we would create the field which would allow setting of the
+  // form display and view modes. This can't be done from config import as
+  // Drupal will not allow existing config in the install folder.
+  // A batch operation would be preferred here as we don't know how many users
+  // there are. I attempted a batch operation in an update hook not thinking
+  // that it wouldn't run. Code available in dept_autologin.fail. Sometimes you
+  // go down the wrong rabbit hole.
+
+  $user_storage = \Drupal::entityTypeManager()->getStorage('user');
+  $query = $user_storage->getQuery();
+  $uids = $query
+    ->condition('status', '1')
+    ->execute();
+
+  $users = $user_storage->loadMultiple($uids);
+
+  foreach ($users as $user) {
+    // Unnecessary assignment to make code easier to read.
+    // In reality it would make sense to check if the key exists.
+    $key = create_random_key();
+    $user->set('field_auth_token', $key);
+    $user->save();
+  }
+}
+
+/**
+ * Generate a random string 32 characters in length.
+ *
+ * @return string
+ *   Returns a random string.
+ *
+ * @throws \Exception
+ */
+function create_random_key() {
+  $result = '';
+  for($i = 0; $i < 32; $i++) {
+    $result .= mt_rand(0, 9);
+  }
+  return $result;
+}
+
+/**
+ * Implements hook_entity_bundle_field_info_alter().
+ */
+function dept_autologin_entity_bundle_field_info_alter(&$fields, EntityTypeInterface $entity_type, $bundle) {
+  // Adds a constraint validator to the new field.
+  if ($entity_type->id() === 'user') {
+    if (isset($fields['field_auth_token'])) {
+      $fields['field_auth_token']->addConstraint('AuthTokenLength', []);
+    }
+  }
+}
+
+
+
+
